@@ -1,0 +1,11 @@
+package main
+
+import "fmt"
+
+func fn() {
+	var a, c int
+	b := 5
+	a, d := 5
+
+	fmt.Println(a)
+}
