@@ -1,39 +1,24 @@
-package main
+package goidents
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
 	"go/token"
-	"os"
 )
-
-func main() {
-	fmt.Println("Starting goidents...")
-	if len(os.Args) < 2 {
-		panic(errors.New("No filename specified"))
-	}
-
-	fname := os.Args[1]
-	err := process(fname)
-	if err != nil {
-		panic(err)
-	}
-}
 
 var fset *token.FileSet
 
-func process(fname string) error {
+func Process(fname string) ([]byte, error) {
 	fmt.Println("Processing: ", fname)
 
 	fset = token.NewFileSet()
 
 	f, err := parser.ParseFile(fset, fname, nil, 0)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	for _, decl := range f.Decls {
@@ -45,20 +30,21 @@ func process(fname string) error {
 	var buf bytes.Buffer
 	err = format.Node(&buf, fset, f)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	file, err := os.Create(fname)
-	if err != nil {
-		return err
-	}
-
-	fmt.Fprintf(file, "%s", buf.Bytes())
-	return nil
+	return buf.Bytes(), nil
 }
 
 func parseFn(fn *ast.FuncDecl) {
 	varMap := make(map[string]bool)
+	if fn.Type.Results != nil {
+		for _, field := range fn.Type.Results.List {
+			vars := getVars(field.Names)
+			appendAll(varMap, vars)
+		}
+	}
+
 	for _, stmt := range fn.Body.List {
 		switch stmt.(type) {
 		case *ast.DeclStmt:
@@ -69,7 +55,9 @@ func parseFn(fn *ast.FuncDecl) {
 			assignStmt := stmt.(*ast.AssignStmt)
 			idents := []*ast.Ident{}
 			for _, expr := range assignStmt.Lhs {
-				idents = append(idents, expr.(*ast.Ident))
+				if ident, ok := expr.(*ast.Ident); ok {
+					idents = append(idents, ident)
+				}
 			}
 
 			vars := getVars(idents)
@@ -80,6 +68,7 @@ func parseFn(fn *ast.FuncDecl) {
 			}
 		}
 	}
+
 }
 
 func changeTok(stmt *ast.AssignStmt) {

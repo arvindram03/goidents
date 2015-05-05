@@ -2,10 +2,10 @@ package main
 
 import "fmt"
 
-func fn() {
+func fn() (d int) {
 	var a, c int
-	b := 5
-	a, d := 5
+	a = 5
+	a, d = 5
 
 	fmt.Println(a)
 }
