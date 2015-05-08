@@ -2,7 +2,6 @@ package goidents
 
 import (
 	"bytes"
-	"fmt"
 	"go/ast"
 	"go/format"
 	"go/parser"
@@ -12,7 +11,6 @@ import (
 var fset *token.FileSet
 
 func Process(fname string) ([]byte, error) {
-	fmt.Println("Processing: ", fname)
 
 	fset = token.NewFileSet()
 
